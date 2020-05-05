@@ -1,0 +1,106 @@
+#!/bin/python3
+
+import os
+import sys
+import logging
+
+from editorconfig import get_properties, exceptions
+
+
+default_ignores = [
+    '.git/',
+]
+
+
+def should_be_tested(filename):
+    for ignore in default_ignores:
+        if ignore in filename:
+            logging.info(filename + ': ignored')
+            return False
+    # todo: local ignore list, maybe parse .gitignore
+    return True
+
+
+def options_to_str(options):
+    out = '['
+    for key, value in options.items():
+        out += '(' + key + ': ' + value + '), '
+        pass
+    out = out[:-2] + ']'
+    return out
+
+
+at_least_one_test_failed = False
+
+
+def ctest_charset(filename, value):
+    pass  # honestly who doesn't use utf-8 anyway
+
+
+def ctest_end_of_line(filename, value):
+    pass  # honestly who doesn't use \n anyway
+
+
+def ctest_trim_trailing_whitespace(filename, value):
+    pass  # todo
+
+
+def ctest_insert_final_newline(filename, value):
+    pass  # todo
+
+
+def ctest_indent_style(filename, value):
+    pass  # todo
+
+
+def ctest_indent_size(filename, value):
+    pass  # todo
+
+
+def ctest_max_line_length(filename, value, tab_width=None):
+    pass  # todo
+
+
+def ctest(filename):
+    if should_be_tested(filename):
+        try:
+            options = get_properties(filename)
+            logging.debug(filename + ': options are ' + options_to_str(options))
+            if 'charset' in options:
+                ctest_charset(filename, options['charset'])
+            if 'end_of_line' in options:
+                ctest_end_of_line(filename, options['end_of_line'])
+            if 'trim_trailing_whitespace' in options:
+                ctest_trim_trailing_whitespace(filename, options['trim_trailing_whitespace'])
+            if 'insert_final_newline' in options:
+                ctest_insert_final_newline(filename, options['insert_final_newline'])
+            if 'indent_style' in options:
+                ctest_indent_style(filename, options['indent_style'])
+            if 'indent_size' in options:
+                ctest_indent_size(filename, options['indent_size'])
+            if 'max_line_length' in options:
+                tab_width = None
+                if 'tab_width' in options:
+                    tab_width = options['tab_width']
+                ctest_max_line_length(filename, options['max_line_length'], tab_width)
+        except exceptions.ParsingError:
+            logging.warning(filename + ': error parsing an .editorconfig file', exc_info=True)
+        except exceptions.PathError:
+            logging.error(filename + ': invalid filename specified', exc_info=True)
+        except exceptions.EditorConfigError:
+            logging.error(filename + ': unknown EditorConfig error occurred', exc_info=True)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)  # todo: add cmdline option to change logging level
+
+    testdir = os.getcwd()  # todo: add cmdline option to change dir
+
+    for (dirpath, dirnames, filenames) in os.walk(testdir):
+        for filename in filenames:
+            ctest(os.path.join(dirpath, filename))
+
+    exit_status = 0
+    if at_least_one_test_failed:
+        exit_status = 1
+    sys.exit(exit_status)
