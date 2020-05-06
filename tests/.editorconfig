@@ -1,0 +1,13 @@
+root = True
+
+[trim_trailing_whitespace_true_test]
+trim_trailing_whitespace = true
+
+[trim_trailing_whitespace_false_test]
+trim_trailing_whitespace = false
+
+[insert_final_newline_true_test]
+insert_final_newline = true
+
+[insert_final_newline_false_test]
+insert_final_newline = false

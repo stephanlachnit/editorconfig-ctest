@@ -9,6 +9,8 @@ import argparse
 from editorconfig import get_properties, exceptions
 
 
+# default values:
+
 default_tab_width = 4
 
 
@@ -22,6 +24,8 @@ default_ignore_file = [
     '/.gitignore'
 ]
 
+
+# helper functions:
 
 def should_be_tested(filename):
     for ignore in default_ignores:
@@ -42,7 +46,6 @@ def should_be_tested(filename):
     except UnicodeDecodeError:
         logging.debug(filename + ': ignored (no text readable)')
         retval = False
-
     f.close()
     return retval
 
@@ -51,9 +54,30 @@ def options_to_str(options):
     out = '['
     for key, value in options.items():
         out += '(' + key + ': ' + value + '), '
-    out = out[:-2] + ']'
+    if out != '[':
+        out = out[:-2] + ']'
     return out
 
+
+def eol_regex_expr(end_of_line):
+    if end_of_line is None:
+        return r'(\n|\r|\r\n)'
+    elif end_of_line == 'lf':
+        return r'\n'
+    elif end_of_line == 'cr':
+        return r'\r'
+    elif end_of_line == 'crlf':
+        return r'\r\n'
+
+
+def str_to_bool(string):
+    if string == 'true':
+        return True
+    elif string == 'false':
+        return False
+
+
+# conformance tests:
 
 ctest_fail_counter = None
 
@@ -69,14 +93,8 @@ def ctest_charset(filename, value):
 
 def ctest_end_of_line(filename, value):
     global ctest_fail_counter
+    regex_expr = r'.*' + eol_regex_expr(value) + r'$'
     f = open(filename, mode='r')
-    regex_expr = r'.*$'
-    if value == 'lf':
-        regex_expr = r'.*\n$'
-    elif value == 'cr':
-        regex_expr = r'.*\r$'
-    elif value == 'crlf':
-        regex_expr = r'.*\r\n$'
     line_count = 0
     for line in f:
         line_count += 1
@@ -93,7 +111,7 @@ def ctest_trim_trailing_whitespace(filename, value):
         line_count = 0
         for line in f:
             line_count += 1
-            if re.match(r'.*\s\n$', line):
+            if re.match(r'.*\s(\n|\r|\r\n)$', line):  # could be a problem if not insert final newline
                 ctest_fail_counter += 1
                 logging.info(filename + ': non-trimmed trailing whitespace in line ' + str(line_count))
         f.close()
@@ -105,7 +123,7 @@ def ctest_insert_final_newline(filename, value):
         f = open(filename, mode='r')
         for line in f:
             pass
-        if not re.match(r'.*\n$', line):
+        if not re.match(r'.*(\n|\r|\r\n)$', line):
             ctest_fail_counter += 1
             logging.info(filename + ': missing final newline')
         f.close()
@@ -136,17 +154,17 @@ def ctest_indent_size(filename, value, indent_style, tab_width):
     pass  # todo
 
 
-def ctest_max_line_length(filename, value, tab_width):
+def ctest_max_line_length(filename, value, tab_width, end_of_line):
     global ctest_fail_counter
     f = open(filename, mode='r')
     line_count = 0
     for line in f:
         line_count += 1
-        line = re.sub(r'\n$', '', line)
+        line = re.sub(eol_regex_expr(end_of_line) + r'$', '', line)  # strip eol char
         tab_replace = ''
         for _ in range(tab_width):
             tab_replace += ' '
-        line = re.sub(r'^\t+', tab_replace, line)
+        line = re.sub(r'^\t+', tab_replace, line)  # replace tab with tab_width spaces
         if len(line) > value:
             ctest_fail_counter += 1
             logging.info(filename + ': too long line in line ' + str(line_count))
@@ -171,9 +189,9 @@ def ctest(filename, force_test=False):
         if 'end_of_line' in options:
             ctest_end_of_line(filename, options['end_of_line'])
         if 'trim_trailing_whitespace' in options:
-            ctest_trim_trailing_whitespace(filename, options['trim_trailing_whitespace'])
+            ctest_trim_trailing_whitespace(filename, str_to_bool(options['trim_trailing_whitespace']))
         if 'insert_final_newline' in options:
-            ctest_insert_final_newline(filename, options['insert_final_newline'])
+            ctest_insert_final_newline(filename, str_to_bool(options['insert_final_newline']))
         if 'indent_style' in options:
             ctest_indent_style(filename, options['indent_style'])
         if 'indent_size' in options:
@@ -188,15 +206,20 @@ def ctest(filename, force_test=False):
             tab_width = default_tab_width
             if 'tab_width' in options:
                 tab_width = int(options['tab_width'])
-            ctest_max_line_length(filename, int(options['max_line_length']), tab_width)
+            end_of_line = None
+            if 'end_of_line' in options:
+                end_of_line = options['end_of_line']
+            ctest_max_line_length(filename, int(options['max_line_length']), tab_width, end_of_line)
 
+
+# program entry:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--dir', action='append', help='test directory')
     parser.add_argument('-f', '--file', action='append', help='test file')
     # todo: add option for ignore files
-    parser.add_argument('--exit-success', action='store_true', help='always exit with 0')
+    parser.add_argument('--exit-zero', action='store_true', help='always exit with status code zero')
     parser.add_argument('--verbose', action='store_true', help='show verbose output')
     args = parser.parse_args()
 
@@ -206,12 +229,14 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging_level)
 
     dirs = args.dir
-    if dirs is None:
-        dirs = [os.getcwd()]
-
     files = args.file
+
     if files is None:
         files = []
+        if dirs is None:
+            dirs = [os.getcwd()]
+    elif dirs is None:
+        dirs = []
 
     ctest_fail_counter = 0
 
@@ -224,7 +249,7 @@ if __name__ == "__main__":
         ctest(os.path.abspath(f), force_test=True)
 
     exit_status = 0
-    if ctest_fail_counter > 0 and not args.exit_success:
+    if ctest_fail_counter > 0 and not args.exit_zero:
         exit_status = 1
     print('found ' + str(ctest_fail_counter) + ' conformance issues')
 

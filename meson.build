@@ -4,38 +4,25 @@ project(
   version : '0',
 )
 
-# folder configuration
-bindir = get_option('bindir')
-bin_file = files('editorconfig-ctest')
+# files
+exe_file = files('editorconfig-ctest')
+man_file = files('editorconfig-ctest.1')
 
-# install binary
+# folders
+bindir = get_option('bindir')
+mandir = get_option('mandir')
+
+# install executable
 install_data(
-  bin_file,
+  exe_file,
   install_dir : bindir,
 )
 
-# test PEP 8 conformance
-flake8 = find_program(
-  'flake8',
-  required : false,
+# install man page
+install_man(
+  man_file,
+  install_dir : mandir,
 )
-if flake8.found()
-  test(
-    'test PEP 8 conformance',
-    flake8,
-  )
-endif
 
-# test editorconfig conformance
-editorconfig_ctest = find_program(
-  'editorconfig-ctest',
-  required : false,
-)
-if editorconfig_ctest.found()
-  test(
-    'test editorconfig conformance',
-    editorconfig_ctest,
-    args : [bin_file],
-    workdir : meson.source_root(),  # todo: add cmdline option to specify the workdir
-  )
-endif
+# tests
+subdir('tests')
