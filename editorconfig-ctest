@@ -30,7 +30,7 @@ def options_to_str(options):
     return out
 
 
-at_least_one_test_failed = False
+ctest_fail_counter = 0
 
 
 def ctest_charset(filename, value):
@@ -101,6 +101,7 @@ if __name__ == "__main__":
             ctest(os.path.join(dirpath, filename))
 
     exit_status = 0
-    if at_least_one_test_failed:
+    if ctest_fail_counter > 0:
         exit_status = 1
+    logging.info('found ' + str(ctest_fail_counter) + ' conformance issues')
     sys.exit(exit_status)
