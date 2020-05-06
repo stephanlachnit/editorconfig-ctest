@@ -4,24 +4,47 @@ import os
 import sys
 import logging
 import re
+import argparse
 
 from editorconfig import get_properties, exceptions
 
 
+default_tab_width = 4
+
+
 default_ignores = [
-    '.git/',
-    'builddir',
+    '/.git/',
+    'builddir/',
+]
+
+
+default_ignore_file = [
+    '/.gitignore'
 ]
 
 
 def should_be_tested(filename):
     for ignore in default_ignores:
         if ignore in filename:
-            logging.debug(filename + ': ignored')
+            logging.debug(filename + ': ignored (by default)')
             return False
-    # todo: local ignore list
+    # todo: local ignore lists
     # todo: ignore files in .gitignore
-    return True
+    retval = True
+    try:
+        f = open(filename, mode='r')
+        line = None
+        for line in f:
+            pass
+        if line is None:
+            logging.debug(filename + ': ignored (file is empty)')
+            retval = False
+    except UnicodeDecodeError:
+        logging.debug(filename + ': ignored (no text readable)')
+        retval = False
+
+    f.close()
+    return retval
 
 
 def options_to_str(options):
@@ -37,16 +60,16 @@ ctest_fail_counter = None
 
 def ctest_charset(filename, value):
     global ctest_fail_counter
-    file = open(filename, mode='r')
-    if file.encoding != value.upper():
+    f = open(filename, mode='r')
+    if f.encoding != value.upper():
         ctest_fail_counter += 1
         logging.info(filename + ': unexpected encoding')
-    file.close()
+    f.close()
 
 
 def ctest_end_of_line(filename, value):
     global ctest_fail_counter
-    file = open(filename, mode='r')
+    f = open(filename, mode='r')
     regex_expr = r'.*$'
     if value == 'lf':
         regex_expr = r'.*\n$'
@@ -55,129 +78,154 @@ def ctest_end_of_line(filename, value):
     elif value == 'crlf':
         regex_expr = r'.*\r\n$'
     line_count = 0
-    for line in file:
+    for line in f:
         line_count += 1
         if not re.match(regex_expr, line):
             ctest_fail_counter += 1
             logging.info(filename + ': unexpected end of line character in line ' + str(line_count))
-    file.close()
+    f.close()
 
 
 def ctest_trim_trailing_whitespace(filename, value):
     global ctest_fail_counter
     if value:
-        file = open(filename, mode='r')
+        f = open(filename, mode='r')
         line_count = 0
-        for line in file:
+        for line in f:
             line_count += 1
             if re.match(r'.*\s\n$', line):
                 ctest_fail_counter += 1
                 logging.info(filename + ': non-trimmed trailing whitespace in line ' + str(line_count))
-        file.close()
+        f.close()
 
 
 def ctest_insert_final_newline(filename, value):
     global ctest_fail_counter
     if value:
-        file = open(filename, mode='r')
-        for line in file:
+        f = open(filename, mode='r')
+        for line in f:
             pass
         if not re.match(r'.*\n$', line):
             ctest_fail_counter += 1
             logging.info(filename + ': missing final newline')
-        file.close()
+        f.close()
 
 
 def ctest_indent_style(filename, value):
     global ctest_fail_counter
-    file = open(filename, mode='r')
+    f = open(filename, mode='r')
     line_count = 0
     if value == 'space':
-        for line in file:
+        for line in f:
             line_count += 1
             if re.match(r'^\t+', line):
                 ctest_fail_counter += 1
                 logging.info(filename + ': unexpected tab indent in line' + str(line_count))
     elif value == 'tab':
-        for line in file:
+        for line in f:
             line_count += 1
             if re.match(r'^\s{2,}', line):
                 # note: allowing one space for comment blocks
-                # todo: consider this properly with
+                # todo: consider this properly with block_comment (https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties)
                 ctest_fail_counter += 1
                 logging.info(filename + ': unexpected space indent in line' + str(line_count))
-    file.close()
+    f.close()
 
 
-def ctest_indent_size(filename, value):
+def ctest_indent_size(filename, value, indent_style, tab_width):
     pass  # todo
 
 
 def ctest_max_line_length(filename, value, tab_width):
     global ctest_fail_counter
-    file = open(filename, mode='r')
+    f = open(filename, mode='r')
     line_count = 0
-    for line in file:
+    for line in f:
         line_count += 1
         line = re.sub(r'\n$', '', line)
         tab_replace = ''
-        for i in range(tab_width):
+        for _ in range(tab_width):
             tab_replace += ' '
         line = re.sub(r'^\t+', tab_replace, line)
         if len(line) > value:
             ctest_fail_counter += 1
             logging.info(filename + ': too long line in line ' + str(line_count))
-    file.close()
+    f.close()
 
 
-def ctest(filename):
-    if should_be_tested(filename):
+def ctest(filename, force_test=False):
+    if should_be_tested(filename) or force_test:
+        # get editorconfig options
         try:
             options = get_properties(filename)
-            logging.debug(filename + ': options are ' + options_to_str(options))
-            # todo: open file only once?
-            # todo: auto-ignore non-text files
-            if 'charset' in options:
-                ctest_charset(filename, options['charset'])
-            if 'end_of_line' in options:
-                ctest_end_of_line(filename, options['end_of_line'])
-            if 'trim_trailing_whitespace' in options:
-                ctest_trim_trailing_whitespace(filename, options['trim_trailing_whitespace'])
-            if 'insert_final_newline' in options:
-                ctest_insert_final_newline(filename, options['insert_final_newline'])
-            if 'indent_style' in options:
-                ctest_indent_style(filename, options['indent_style'])
-            if 'indent_size' in options:
-                ctest_indent_size(filename, options['indent_size'])
-            if 'max_line_length' in options:
-                tab_width = 1
-                if 'tab_width' in options:
-                    tab_width = int(options['tab_width'])
-                ctest_max_line_length(filename, int(options['max_line_length']), tab_width)
         except exceptions.ParsingError:
             logging.warning(filename + ': error parsing an .editorconfig file', exc_info=True)
         except exceptions.PathError:
             logging.error(filename + ': invalid filename specified', exc_info=True)
         except exceptions.EditorConfigError:
             logging.error(filename + ': unknown EditorConfig error occurred', exc_info=True)
+        # run conformance tests
+        logging.debug(filename + ': options ' + options_to_str(options))
+        if 'charset' in options:
+            ctest_charset(filename, options['charset'])
+        if 'end_of_line' in options:
+            ctest_end_of_line(filename, options['end_of_line'])
+        if 'trim_trailing_whitespace' in options:
+            ctest_trim_trailing_whitespace(filename, options['trim_trailing_whitespace'])
+        if 'insert_final_newline' in options:
+            ctest_insert_final_newline(filename, options['insert_final_newline'])
+        if 'indent_style' in options:
+            ctest_indent_style(filename, options['indent_style'])
+        if 'indent_size' in options:
+            indent_style = None
+            if 'indent_style' in options:
+                indent_style = options['indent_style']
+            tab_width = default_tab_width
+            if 'tab_width' in options:
+                tab_width = int(options['tab_width'])
+            ctest_indent_size(filename, options['indent_size'], indent_style, tab_width)
+        if 'max_line_length' in options:
+            tab_width = default_tab_width
+            if 'tab_width' in options:
+                tab_width = int(options['tab_width'])
+            ctest_max_line_length(filename, int(options['max_line_length']), tab_width)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)  # todo: add cmdline option to change logging level
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--dir', action='append', help='test directory')
+    parser.add_argument('-f', '--file', action='append', help='test file')
+    # todo: add option for ignore files
+    parser.add_argument('--exit-success', action='store_true', help='always exit with 0')
+    parser.add_argument('--verbose', action='store_true', help='show verbose output')
+    args = parser.parse_args()
 
-    testdir = os.getcwd()  # todo: add cmdline option to change dir
+    logging_level = logging.INFO
+    if args.verbose:
+        logging_level = logging.DEBUG
+    logging.basicConfig(level=logging_level)
+
+    dirs = args.dir
+    if dirs is None:
+        dirs = [os.getcwd()]
+
+    files = args.file
+    if files is None:
+        files = []
 
     ctest_fail_counter = 0
 
-    for (dirpath, dirnames, filenames) in os.walk(testdir):
-        for filename in filenames:
-            ctest(os.path.join(dirpath, filename))
+    for d in dirs:
+        for (dirpath, dirnames, filenames) in os.walk(d):
+            for filename in filenames:
+                ctest(os.path.join(dirpath, filename))
+
+    for f in files:
+        ctest(os.path.abspath(f), force_test=True)
 
     exit_status = 0
-    if ctest_fail_counter > 0:
+    if ctest_fail_counter > 0 and not args.exit_success:
         exit_status = 1
-    logging.info('found ' + str(ctest_fail_counter) + ' conformance issues')
-
-    exit_status = 0  # for debugging purposes, add cmdline option to always exit with 0
+    print('found ' + str(ctest_fail_counter) + ' conformance issues')
 
     sys.exit(exit_status)
