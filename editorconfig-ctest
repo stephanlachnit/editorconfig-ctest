@@ -20,7 +20,7 @@ default_ignores = [
 ]
 
 
-default_ignore_file = [
+default_ignore_files = [
     '/.gitignore'
 ]
 
@@ -60,14 +60,13 @@ def options_to_str(options):
 
 
 def eol_regex_expr(end_of_line):
-    if end_of_line is None:
-        return r'(\n|\r|\r\n)'
-    elif end_of_line == 'lf':
+    if end_of_line == 'lf':
         return r'\n'
-    elif end_of_line == 'cr':
+    if end_of_line == 'cr':
         return r'\r'
-    elif end_of_line == 'crlf':
+    if end_of_line == 'crlf':
         return r'\r\n'
+    return r'(\n|\r|\r\n)'
 
 
 def str_to_bool(string):
