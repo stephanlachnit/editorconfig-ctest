@@ -15,7 +15,7 @@ default_ignores = [
 def should_be_tested(filename):
     for ignore in default_ignores:
         if ignore in filename:
-            logging.info(filename + ': ignored')
+            logging.debug(filename + ': ignored')
             return False
     # todo: local ignore list, maybe parse .gitignore
     return True
