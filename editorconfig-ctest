@@ -3,12 +3,14 @@
 import os
 import sys
 import logging
+import re
 
 from editorconfig import get_properties, exceptions
 
 
 default_ignores = [
     '.git/',
+    'builddir',
 ]
 
 
@@ -17,7 +19,7 @@ def should_be_tested(filename):
         if ignore in filename:
             logging.debug(filename + ': ignored')
             return False
-    # todo: local ignore list, maybe parse .gitignore
+    # todo: local ignore list, parse .gitignore
     return True
 
 
@@ -29,7 +31,7 @@ def options_to_str(options):
     return out
 
 
-ctest_fail_counter = 0
+ctest_fail_counter = None
 
 
 def ctest_charset(filename, value):
@@ -41,11 +43,26 @@ def ctest_end_of_line(filename, value):
 
 
 def ctest_trim_trailing_whitespace(filename, value):
-    pass  # todo
+    global ctest_fail_counter
+    if value:
+        file = open(filename, mode='r')
+        line_count = 0
+        for line in file:
+            line_count += 1
+            if re.match(r'.*\s\n$', line):
+                ctest_fail_counter += 1
+                logging.info(filename + ': non-trimmed trailing whitespace found in line ' + str(line_count))
 
 
 def ctest_insert_final_newline(filename, value):
-    pass  # todo
+    global ctest_fail_counter
+    if value:
+        file = open(filename, mode='r')
+        for line in file:
+            pass
+        if not re.match(r'.*\n$', line):
+            ctest_fail_counter += 1
+            logging.info(filename + ': missing final newline found')
 
 
 def ctest_indent_style(filename, value):
@@ -56,8 +73,20 @@ def ctest_indent_size(filename, value):
     pass  # todo
 
 
-def ctest_max_line_length(filename, value, tab_width=None):
-    pass  # todo
+def ctest_max_line_length(filename, value, tab_width):
+    global ctest_fail_counter
+    file = open(filename, mode='r')
+    line_count = 0
+    for line in file:
+        line_count += 1
+        line = re.sub(r'\n$', '', line)
+        tab_replace = ''
+        for i in range(tab_width):
+            tab_replace += ' '
+        line = re.sub(r'^\t+', tab_replace, line)
+        if len(line) > value:
+            ctest_fail_counter += 1
+            logging.info(filename + ': too long line found in line ' + str(line_count))
 
 
 def ctest(filename):
@@ -65,6 +94,8 @@ def ctest(filename):
         try:
             options = get_properties(filename)
             logging.debug(filename + ': options are ' + options_to_str(options))
+            # todo: open file only once?
+            # todo: auto-ignore non-text files
             if 'charset' in options:
                 ctest_charset(filename, options['charset'])
             if 'end_of_line' in options:
@@ -78,10 +109,10 @@ def ctest(filename):
             if 'indent_size' in options:
                 ctest_indent_size(filename, options['indent_size'])
             if 'max_line_length' in options:
-                tab_width = None
+                tab_width = 1
                 if 'tab_width' in options:
-                    tab_width = options['tab_width']
-                ctest_max_line_length(filename, options['max_line_length'], tab_width)
+                    tab_width = int(options['tab_width'])
+                ctest_max_line_length(filename, int(options['max_line_length']), tab_width)
         except exceptions.ParsingError:
             logging.warning(filename + ': error parsing an .editorconfig file', exc_info=True)
         except exceptions.PathError:
@@ -91,9 +122,11 @@ def ctest(filename):
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)  # todo: add cmdline option to change logging level
+    logging.basicConfig(level=logging.INFO)  # todo: add cmdline option to change logging level
 
     testdir = os.getcwd()  # todo: add cmdline option to change dir
+
+    ctest_fail_counter = 0
 
     for (dirpath, dirnames, filenames) in os.walk(testdir):
         for filename in filenames:
@@ -103,4 +136,7 @@ if __name__ == "__main__":
     if ctest_fail_counter > 0:
         exit_status = 1
     logging.info('found ' + str(ctest_fail_counter) + ' conformance issues')
+
+    exit_status = 0  # for debugging purposes, add cmdline option to always exit with 0
+
     sys.exit(exit_status)
