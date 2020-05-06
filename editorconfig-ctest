@@ -25,7 +25,6 @@ def options_to_str(options):
     out = '['
     for key, value in options.items():
         out += '(' + key + ': ' + value + '), '
-        pass
     out = out[:-2] + ']'
     return out
 
