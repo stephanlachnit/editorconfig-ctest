@@ -19,7 +19,8 @@ def should_be_tested(filename):
         if ignore in filename:
             logging.debug(filename + ': ignored')
             return False
-    # todo: local ignore list, parse .gitignore
+    # todo: local ignore list
+    # todo: ignore files in .gitignore
     return True
 
 
@@ -35,11 +36,31 @@ ctest_fail_counter = None
 
 
 def ctest_charset(filename, value):
-    pass  # honestly who doesn't use utf-8 anyway
+    global ctest_fail_counter
+    file = open(filename, mode='r')
+    if file.encoding != value.upper():
+        ctest_fail_counter += 1
+        logging.info(filename + ': unexpected encoding')
+    file.close()
 
 
 def ctest_end_of_line(filename, value):
-    pass  # honestly who doesn't use \n anyway
+    global ctest_fail_counter
+    file = open(filename, mode='r')
+    regex_expr = r'.*$'
+    if value == 'lf':
+        regex_expr = r'.*\n$'
+    elif value == 'cr':
+        regex_expr = r'.*\r$'
+    elif value == 'crlf':
+        regex_expr = r'.*\r\n$'
+    line_count = 0
+    for line in file:
+        line_count += 1
+        if not re.match(regex_expr, line):
+            ctest_fail_counter += 1
+            logging.info(filename + ': unexpected end of line character in line ' + str(line_count))
+    file.close()
 
 
 def ctest_trim_trailing_whitespace(filename, value):
@@ -51,7 +72,8 @@ def ctest_trim_trailing_whitespace(filename, value):
             line_count += 1
             if re.match(r'.*\s\n$', line):
                 ctest_fail_counter += 1
-                logging.info(filename + ': non-trimmed trailing whitespace found in line ' + str(line_count))
+                logging.info(filename + ': non-trimmed trailing whitespace in line ' + str(line_count))
+        file.close()
 
 
 def ctest_insert_final_newline(filename, value):
@@ -62,11 +84,29 @@ def ctest_insert_final_newline(filename, value):
             pass
         if not re.match(r'.*\n$', line):
             ctest_fail_counter += 1
-            logging.info(filename + ': missing final newline found')
+            logging.info(filename + ': missing final newline')
+        file.close()
 
 
 def ctest_indent_style(filename, value):
-    pass  # todo
+    global ctest_fail_counter
+    file = open(filename, mode='r')
+    line_count = 0
+    if value == 'space':
+        for line in file:
+            line_count += 1
+            if re.match(r'^\t+', line):
+                ctest_fail_counter += 1
+                logging.info(filename + ': unexpected tab indent in line' + str(line_count))
+    elif value == 'tab':
+        for line in file:
+            line_count += 1
+            if re.match(r'^\s{2,}', line):
+                # note: allowing one space for comment blocks
+                # todo: consider this properly with
+                ctest_fail_counter += 1
+                logging.info(filename + ': unexpected space indent in line' + str(line_count))
+    file.close()
 
 
 def ctest_indent_size(filename, value):
@@ -86,7 +126,8 @@ def ctest_max_line_length(filename, value, tab_width):
         line = re.sub(r'^\t+', tab_replace, line)
         if len(line) > value:
             ctest_fail_counter += 1
-            logging.info(filename + ': too long line found in line ' + str(line_count))
+            logging.info(filename + ': too long line in line ' + str(line_count))
+    file.close()
 
 
 def ctest(filename):
