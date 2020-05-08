@@ -15,25 +15,46 @@ default_tab_width = 4
 
 
 default_ignores = [
-    '/.git/',
-    'builddir/',
+    # regex syntax after workdir path
+    r'/.git/.*$',
+    r'/builddir/.*$',
 ]
 
 
 default_ignore_files = [
-    '/.gitignore'
+    # inside workdir only for now
+    '.editorconfigignore',
+    '.localeditorconfigignore',
 ]
 
 
 # helper functions:
 
-def should_be_tested(filename):
+def get_ignored_files(workdir):
+    # regex style outputs
+    out = []
     for ignore in default_ignores:
-        if ignore in filename:
-            logging.debug(filename + ': ignored (by default)')
-            return False
-    # todo: local ignore lists
+        out += [workdir + ignore]
+    for filename in default_ignore_files:
+        try:
+            f = open(os.path.join(workdir, filename), mode='r')
+            for line in f:
+                if len(line) > 0:
+                    if line[0] != '#':
+                        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char, could be a problem if no eol char
+                        out += [workdir + line]
+            f.close()
+        except IOError:
+            pass
     # todo: ignore files in .gitignore
+    return out
+
+
+def should_be_tested(filename, ignores):
+    for ignore in ignores:
+        if re.match(ignore, filename):
+            logging.debug(filename + ': ignored (by ignores)')
+            return False
     retval = True
     try:
         f = open(filename, mode='r')
@@ -159,20 +180,21 @@ def ctest_max_line_length(filename, value, tab_width, end_of_line):
     line_count = 0
     for line in f:
         line_count += 1
-        line = re.sub(eol_regex_expr(end_of_line) + r'$', '', line)  # strip eol char
+        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char, could be a problem if no eol char
         tab_replace = ''
         for _ in range(tab_width):
             tab_replace += ' '
-        line = re.sub(r'^\t+', tab_replace, line)  # replace tab with tab_width spaces
+        line = re.sub(r'^\t+', tab_replace, line)  # replaces tab with tab_width spaces
         if len(line) > value:
             ctest_fail_counter += 1
             logging.info(filename + ': too long line in line ' + str(line_count))
     f.close()
 
 
-def ctest(filename, force_test=False):
-    if should_be_tested(filename) or force_test:
+def ctest(filename, ignores):
+    if should_be_tested(filename, ignores):
         # get editorconfig options
+        options = dict()
         try:
             options = get_properties(filename)
         except exceptions.ParsingError:
@@ -239,13 +261,16 @@ if __name__ == "__main__":
 
     ctest_fail_counter = 0
 
-    for d in dirs:
-        for (dirpath, dirnames, filenames) in os.walk(d):
+    for dirname in dirs:
+        dirname = os.path.abspath(dirname)
+        ignores = get_ignored_files(dirname)
+        for (dirpath, dirnames, filenames) in os.walk(dirname):
             for filename in filenames:
-                ctest(os.path.join(dirpath, filename))
+                ctest(os.path.join(dirpath, filename), ignores)
 
-    for f in files:
-        ctest(os.path.abspath(f), force_test=True)
+    for filename in files:
+        filename = os.path.abspath(filename)
+        ctest(os.path.abspath(filename), [])
 
     exit_status = 0
     if ctest_fail_counter > 0 and not args.exit_zero:

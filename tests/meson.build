@@ -13,7 +13,6 @@ endif
 
 # test editorconfig conformance
 editorconfig_ctest = find_program(
-  'editorconfig-ctest',
   exe_file,
   required : false,
 )
