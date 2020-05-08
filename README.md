@@ -51,11 +51,12 @@ meson install -C builddir
 
 See `editorconfig-ctest --help` or `man editorconfig-ctest` (if installed):
 ```
-Usage
-    editorconfig-ctest [-h] [-d DIR] [-f FILE] [--exit-zero] [--verbose]
+SYNOPSIS
+    editorconfig-ctest [-d DIR] [-f FILE] [--exit-zero] [--verbose]
 
-Optional arguments
-    -h, --help show this help message and exit
+OPTIONS
+    -h, --help
+            show this help message and exit
 
     -d DIR, --dir DIR
             test directory
@@ -72,6 +73,8 @@ Optional arguments
     --version
             show program's version number and exit
 
+BEHAVIOUR
+    If no directory or file is specified the current working directory will be testd.  Multiple folder and file calls are allowed, but there is no check if a file has already been tested or not.  If a file is specified, it will be tested, even if it is inside an ignore file.
 ```
 
 ## Development

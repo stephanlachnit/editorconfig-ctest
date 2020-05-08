@@ -1,11 +1,11 @@
-.\" Generated with help2man.
 .TH EDITORCONFIG-CTEST "1" "May 2020" "editorconfig-ctest version 1" "User Commands"
 .SH NAME
 editorconfig-ctest \- conformance test for editorconfig
-.SH DESCRIPTION
-.SS "Usage"
-editorconfig\-ctest [\-h] [\-d DIR] [\-f FILE] [\-\-exit\-zero] [\-\-verbose]
-.SS "Optional arguments"
+.SH USAGE
+.SS SYNOPSIS
+editorconfig\-ctest [\-d DIR] [\-f FILE] [\-\-exit\-zero] [\-\-verbose]
+.SS OPTIONS
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 show this help message and exit
 .TP
@@ -23,5 +23,9 @@ show verbose output
 .TP
 \fB\-\-version\fR
 show program's version number and exit
+.SS BEHAVIOUR
+If no directory or file is specified the current working directory will be testd.
+Multiple folder and file calls are allowed, but there is no check if a file has already been tested or not.
+If a file is specified, it will be tested, even if it is inside an ignore file.
 .SH "SEE ALSO"
 editorconfig(1)
