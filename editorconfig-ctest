@@ -30,6 +30,20 @@ default_ignore_files = [
 
 # helper functions:
 
+def eol_regex_expr(end_of_line):
+    if end_of_line == 'lf':
+        return r'\n$'
+    if end_of_line == 'cr':
+        return r'\r$'
+    if end_of_line == 'crlf':
+        return r'\r\n$'
+    return r'(\n|\r|\r\n)?$'
+
+
+def strip_eol_char(line):
+    return re.sub(r'(\n|\r|\r\n)$', '', line)
+
+
 def get_ignored_files(workdir):
     # regex style outputs
     out = []
@@ -41,7 +55,7 @@ def get_ignored_files(workdir):
             for line in f:
                 if len(line) > 0:
                     if line[0] != '#':
-                        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char
+                        line = strip_eol_char(line)
                         out += [workdir + line]
             f.close()
         except IOError:
@@ -76,18 +90,9 @@ def options_to_str(options):
     for key, value in options.items():
         out += '(' + key + ': ' + value + '), '
     if out != '[':
-        out = out[:-2] + ']'
+        out = out[:-2]
+    out += ']'
     return out
-
-
-def eol_regex_expr(end_of_line):
-    if end_of_line == 'lf':
-        return r'\n$'
-    if end_of_line == 'cr':
-        return r'\r$'
-    if end_of_line == 'crlf':
-        return r'\r\n$'
-    return r'(\n|\r|\r\n)?$'
 
 
 def str_to_bool(string):
@@ -103,9 +108,10 @@ ctest_fail_counter = None
 
 
 def ctest_charset(filename, value):
+    # todo: python always decodes with utf-8 by default
     global ctest_fail_counter
     f = open(filename, mode='r')
-    if f.encoding != value.upper():
+    if f.encoding.lower() != value:
         ctest_fail_counter += 1
         logging.info(filename + ': unexpected encoding')
     f.close()
@@ -113,8 +119,8 @@ def ctest_charset(filename, value):
 
 def ctest_end_of_line(filename, value):
     global ctest_fail_counter
-    regex_expr = r'.*' + eol_regex_expr(value)
-    f = open(filename, mode='r')
+    regex_expr = r'^.*' + eol_regex_expr(value)
+    f = open(filename, mode='r', newline='')
     line_count = 0
     for line in f:
         line_count += 1
@@ -131,7 +137,8 @@ def ctest_trim_trailing_whitespace(filename, value):
         line_count = 0
         for line in f:
             line_count += 1
-            if re.match(r'.*\s(\n|\r|\r\n)$', line):  # could be a problem if not insert final newline
+            line = strip_eol_char(line)
+            if re.match(r'^.*\s$', line):
                 ctest_fail_counter += 1
                 logging.info(filename + ': non-trimmed trailing whitespace in line ' + str(line_count))
         f.close()
@@ -139,14 +146,18 @@ def ctest_trim_trailing_whitespace(filename, value):
 
 def ctest_insert_final_newline(filename, value):
     global ctest_fail_counter
+    f = open(filename, mode='r')
+    for line in f:
+        pass
     if value:
-        f = open(filename, mode='r')
-        for line in f:
-            pass
-        if not re.match(r'.*(\n|\r|\r\n)$', line):
+        if not re.match(r'^.*(\n|\r|\r\n)$', line):
             ctest_fail_counter += 1
             logging.info(filename + ': missing final newline')
-        f.close()
+    else:
+        if re.match(r'^.*(\n|\r|\r\n)$', line):
+            ctest_fail_counter += 1
+            logging.info(filename + ': unexpteced final newline')
+    f.close()
 
 
 def ctest_indent_style(filename, value):
@@ -162,7 +173,7 @@ def ctest_indent_style(filename, value):
     elif value == 'tab':
         for line in f:
             line_count += 1
-            if re.match(r'^\s{2,}', line):
+            if re.match(r'^ {2,}', line):
                 # note: allowing one space for comment blocks
                 # todo: consider this properly with block_comment (https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties)
                 ctest_fail_counter += 1
@@ -180,7 +191,7 @@ def ctest_max_line_length(filename, value, tab_width, end_of_line):
     line_count = 0
     for line in f:
         line_count += 1
-        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char
+        line = strip_eol_char(line)
         tab_replace = ''
         for _ in range(tab_width):
             tab_replace += ' '

@@ -1,6 +1,30 @@
 root = True
 
+[charset_utf_8_test]
+charset = utf-8
+
+[end_of_line_lf_test]
+end_of_line = lf
+
+[end_of_line_lf_test_fail]
+end_of_line = lf
+
+[end_of_line_cr_test]
+end_of_line = cr
+
+[end_of_line_cr_test_fail]
+end_of_line = cr
+
+[end_of_line_crlf_test]
+end_of_line = crlf
+
+[end_of_line_crlf_test_fail]
+end_of_line = crlf
+
 [trim_trailing_whitespace_true_test]
+trim_trailing_whitespace = true
+
+[trim_trailing_whitespace_true_test_fail]
 trim_trailing_whitespace = true
 
 [trim_trailing_whitespace_false_test]
@@ -9,5 +33,37 @@ trim_trailing_whitespace = false
 [insert_final_newline_true_test]
 insert_final_newline = true
 
+[insert_final_newline_true_test_fail]
+insert_final_newline = true
+
 [insert_final_newline_false_test]
 insert_final_newline = false
+
+[insert_final_newline_false_test_fail]
+insert_final_newline = false
+
+[indent_style_space_test]
+indent_style = space
+
+[indent_style_space_test_fail]
+indent_style = space
+
+[indent_style_tab_test]
+indent_style = tab
+
+[indent_style_tab_test_fail]
+indent_style = tab
+
+[max_line_length_wo_tabs_test]
+max_line_length = 22
+
+[max_line_length_wo_tabs_test_fail]
+max_line_length = 21
+
+[max_line_length_w_tabs_test]
+tab_width = 4
+max_line_length = 35
+
+[max_line_length_w_tabs_test_fail]
+tab_width = 4
+max_line_length = 35

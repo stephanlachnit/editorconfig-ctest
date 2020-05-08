@@ -11,15 +11,15 @@ To ensure that everything is working as expected and no regressions will be made
 ## Properties
 
 Currently the following [editorconfig properties](https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties) are supported:
-* `charset`, currently only `utf-8` is confirmed, but theoretically all charsets supported by Python should work
-* `end_of_line`, currently only `lr` is confirmed, but theoretically all of them should work
-* `trim_trailing_whitespace`, partial testing integration, but can currently fail if there is no final newline
-* `insert_final_newline`, partial testing integration
-* `indent_style`, currently only `space` confirmed, `tab` should work in most cases but can theoretically fail or give false positives (fix requires `block_comment`)
-* `tab_width`, is used for `max_line_length`
+* `end_of_line` (full testing integration)
+* `trim_trailing_whitespace` (full testing integration)
+* `insert_final_newline` (full testing integration)
+* `tab_width`, is used for `max_line_length` and will be for `indent_size`
 * `max_line_length`
 
-Planned but not supported yet:
+Planned but not fully supported yet:
+* `charset`, currently only `utf-8` works
+* `indent_style`, full testing integration, however `tab` can theoretically fail or give false positives (fix requires `block_comment`), it should work in most cases though
 * `indent_size`
 * `block_comment` with `block_comment_start`  and `block_comment_end`
 * `quote_type`
@@ -34,4 +34,5 @@ Currently implemeted:
 Planned but not implemented yet:
 * Ignore files in .gitignores
 * Reverse ignores files
-* Fail tests in test suite
+* Complete test suite with CI
+* Github App
