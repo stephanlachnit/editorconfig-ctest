@@ -41,7 +41,7 @@ def get_ignored_files(workdir):
             for line in f:
                 if len(line) > 0:
                     if line[0] != '#':
-                        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char, could be a problem if no eol char
+                        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char
                         out += [workdir + line]
             f.close()
         except IOError:
@@ -82,12 +82,12 @@ def options_to_str(options):
 
 def eol_regex_expr(end_of_line):
     if end_of_line == 'lf':
-        return r'\n'
+        return r'\n$'
     if end_of_line == 'cr':
-        return r'\r'
+        return r'\r$'
     if end_of_line == 'crlf':
-        return r'\r\n'
-    return r'(\n|\r|\r\n)'
+        return r'\r\n$'
+    return r'(\n|\r|\r\n)?$'
 
 
 def str_to_bool(string):
@@ -113,7 +113,7 @@ def ctest_charset(filename, value):
 
 def ctest_end_of_line(filename, value):
     global ctest_fail_counter
-    regex_expr = r'.*' + eol_regex_expr(value) + r'$'
+    regex_expr = r'.*' + eol_regex_expr(value)
     f = open(filename, mode='r')
     line_count = 0
     for line in f:
@@ -180,7 +180,7 @@ def ctest_max_line_length(filename, value, tab_width, end_of_line):
     line_count = 0
     for line in f:
         line_count += 1
-        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char, could be a problem if no eol char
+        line = re.sub(r'(\n|\r|\r\n)$', '', line)  # strips eol char
         tab_replace = ''
         for _ in range(tab_width):
             tab_replace += ' '

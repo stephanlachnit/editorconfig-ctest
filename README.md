@@ -17,7 +17,7 @@ Currently the following [editorconfig properties](https://github.com/editorconfi
 * `insert_final_newline`, partial testing integration
 * `indent_style`, currently only `space` confirmed, `tab` should work in most cases but can theoretically fail or give false positives (fix requires `block_comment`)
 * `tab_width`, is used for `max_line_length`
-* `max_line_length`, can currently fail if there is no final newline
+* `max_line_length`
 
 Planned but not supported yet:
 * `indent_size`
