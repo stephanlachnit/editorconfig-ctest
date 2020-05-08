@@ -28,28 +28,27 @@ Planned but not fully supported yet:
 ## Features
 
 Currently implemeted:
-* Ignore file in a ingore file using regex syntax
-* Automatically ignores non-readables files
+* Ignores files in an ingore file using regex syntax
+* Automatically ignores non-readable files
 * Man page and cmdline interface
 
 Planned but not implemented yet:
 * Ignore files in .gitignores
-* Reverse ignores files
-* Complete test suite with CI
+* .gitignore like ignore files
 * Github App
 
 ## Installation
 
-editorconfig-ctest doesn't require any installation, just download the file and run it. Make sure to install the [editorconfig-python-core](https://github.com/editorconfig/editorconfig-core-py).
-However, if you wish to install it on your system, you can do so using [Meson](https://mesonbuild.com/):
+Make sure to install the [editorconfig-python-core](https://github.com/editorconfig/editorconfig-core-py). To install it on your system, you can do so using [Meson](https://mesonbuild.com/):
 ```sh
 meson builddir
 meson install -C builddir
 ```
 
+Note that it is also possible to use editorconfig-ctest by just running the file, an installation is not necessary.
+
 ## Usage
 
-See `editorconfig-ctest --help` or `man editorconfig-ctest` (if installed):
 ```
 SYNOPSIS
     editorconfig-ctest [-d DIR] [-f FILE] [--exit-zero] [--verbose]
