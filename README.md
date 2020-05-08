@@ -5,24 +5,24 @@
 
 editorconfig-ctest checks all files in the current working directory on conformance of the editorconfig. It is designed to be used in test suites and integrated into CI workflows. It exits with 0 if all files are conform, and with 1 if one or more files don't conform.
 
-This tool is inspired by [editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) and [eclint](https://github.com/jedmao/eclint), but written in a single Python file. This has several advantages when it comes to distributing this tool, which is the main reason why I started this project. editorconfig-ctest only depends on the [editorconfig-python-core](https://github.com/editorconfig/editorconfig-core-py), and uses [Meson](https://mesonbuild.com/) for installation for testing integration (which is optional).
+This tool is inspired by [editorconfig-checker](https://github.com/editorconfig-checker/editorconfig-checker) and [eclint](https://github.com/jedmao/eclint), but written in a single Python file. This has several advantages when it comes to distributing this tool, which is the main reason why I started this project. editorconfig-ctest only depends on the editorconfig-python-core, and uses Meson for installation and testing integration (optional).
 
-To ensure that everything is working as expected and no regressions will be made, I'm working on a fully featured test suite, meaning that every feature will be tested in both a normal test, and a test that is designed to fail.
+To ensure that everything is working as expected and no regressions will be made, I'm working on a fully featured test suite, meaning that every feature will be tested in both a normal test, and a test that is designed to fail if possible.
 
 ## Properties
 
 Currently the following [editorconfig properties](https://github.com/editorconfig/editorconfig/wiki/EditorConfig-Properties) are supported:
-* `end_of_line` (full testing integration)
-* `trim_trailing_whitespace` (full testing integration)
-* `insert_final_newline` (full testing integration)
-* `tab_width`, is used for `max_line_length` and will be for `indent_size`
+* `end_of_line`
+* `trim_trailing_whitespace`
+* `insert_final_newline`
+* `tab_width` (used for `max_line_length` and `indent_size`)
 * `max_line_length`
 
 Planned but not fully supported yet:
 * `charset`, currently only `utf-8` works
-* `indent_style`, full testing integration, however `tab` can theoretically fail or give false positives (fix requires `block_comment`), it should work in most cases though
+* `indent_style`, partially supported, `tab` can theoretically fail or give false positives (fix requires `block_comment`), it should work in most cases though
 * `indent_size`
-* `block_comment` with `block_comment_start`  and `block_comment_end`
+* `block_comment`, `block_comment_start`  and `block_comment_end`
 * `quote_type`
 
 ## Features
@@ -37,3 +37,43 @@ Planned but not implemented yet:
 * Reverse ignores files
 * Complete test suite with CI
 * Github App
+
+## Installation
+
+editorconfig-ctest doesn't require any installation, just download the file and run it. Make sure to install the [editorconfig-python-core](https://github.com/editorconfig/editorconfig-core-py).
+However, if you wish to install it on your system, you can do so using [Meson](https://mesonbuild.com/):
+```sh
+meson builddir
+meson install -C builddir
+```
+
+## Usage
+
+See `editorconfig-ctest --help` or `man editorconfig-ctest` (if installed):
+```
+Usage
+    editorconfig-ctest [-h] [-d DIR] [-f FILE] [--exit-zero] [--verbose]
+
+Optional arguments
+    -h, --help show this help message and exit
+
+    -d DIR, --dir DIR
+            test directory
+
+    -f FILE, --file FILE
+            test file
+
+    --exit-zero
+            always exit with status code zero
+
+    --verbose
+            show verbose output
+
+    --version
+            show program's version number and exit
+
+```
+
+## Development
+
+editorconfig-ctest is currently only developed and maintained by myself. The project is licensed under the BSD-2-Clause, the same license as the editorconfig-python-core. Feel free to help by packaging it for distros or providing PRs.
