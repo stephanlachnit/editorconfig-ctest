@@ -1,7 +1,7 @@
 project(
   'editorconfig-ctest',
   license : 'BSD-2-Clause',
-  version : '0',
+  version : '1',
 )
 
 # files

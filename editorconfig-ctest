@@ -253,7 +253,7 @@ if __name__ == "__main__":
     # todo: add option for ignore files
     parser.add_argument('--exit-zero', action='store_true', help='always exit with status code zero')
     parser.add_argument('--verbose', action='store_true', help='show verbose output')
-    parser.add_argument('--version', action='version', version='editorconfig-ctest version 0')
+    parser.add_argument('--version', action='version', version='editorconfig-ctest version 1')
     args = parser.parse_args()
 
     logging_level = logging.INFO
