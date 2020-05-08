@@ -1,0 +1,16 @@
+os: linux
+dist: focal
+
+addons:
+  apt:
+    update: true
+    packages:
+      - python3-editorconfig
+      - meson
+      - flake8
+
+script:
+  - meson builddir
+  - meson test -C builddir
+  - sudo meson install -C builddir
+  - editorconfig-ctest --version
